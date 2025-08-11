@@ -31,6 +31,20 @@ namespace Board
                     yield return new Vector2Int(x, y);
         }
 
+        public IEnumerable<Vector2Int> AllCellsTopRightToBottomLeft()
+        {
+            for (int y = H - 1; y >= 0; y--)
+                for (int x = W - 1; x >= 0; x--)
+                    yield return new Vector2Int(x, y);
+        }
+
+        public IEnumerable<Vector2Int> AllCellsBottomLeftToTopRight()
+        {
+            for (int y = 0; y < H; y++)
+                for (int x = 0; x < W; x++)
+                    yield return new Vector2Int(x, y);
+        }
+
         public List<Vector2Int> EmptyCells()
         {
             var list = new List<Vector2Int>();
