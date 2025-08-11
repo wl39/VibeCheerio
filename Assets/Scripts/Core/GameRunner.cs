@@ -2,6 +2,7 @@ using UnityEngine;
 using Board;
 using Systems;
 using System;
+using System.Collections.Generic;
 
 namespace Core
 {
@@ -15,6 +16,7 @@ namespace Core
 
         public event Action OnBoardChanged;
         public int Turn => turnCounter;
+        public List<MoveInfo> LastMoves => mergeSystem.LastMoves;
 
         int turnCounter = 0;
 
