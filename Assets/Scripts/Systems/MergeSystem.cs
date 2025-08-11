@@ -20,9 +20,11 @@ namespace Systems
                     if (board.Grid[x, y] != null) board.Grid[x, y].mergedThisStep = false;
 
             // 2) Compute iteration order opposite to move direction so pushing is correct
-            IEnumerable<Vector2Int> order = dir == BoardController.Right || dir == BoardController.Up
-                ? board.AllCellsTopLeftToBottomRight()
-                : board.AllCellsBottomRightToTopLeft();
+            IEnumerable<Vector2Int> order =
+                dir == BoardController.Right ? board.AllCellsTopRightToBottomLeft() :
+                dir == BoardController.Left ? board.AllCellsBottomLeftToTopRight() :
+                dir == BoardController.Up ? board.AllCellsTopLeftToBottomRight() :
+                board.AllCellsBottomRightToTopLeft();
 
             foreach (var cell in order)
             {
