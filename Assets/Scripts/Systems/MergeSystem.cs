@@ -6,10 +6,13 @@ namespace Systems
 {
     public class MergeSystem
     {
+        public List<MoveInfo> LastMoves { get; } = new();
+
         // Slide then merge in +1 rule; scan order = top-left -> bottom-right.
         public bool SlideAndMerge(BoardController board, Vector2Int dir)
         {
             bool movedOrMerged = false;
+            LastMoves.Clear();
 
             // 1) Clear merge flags
             for (int y = 0; y < BoardController.H; y++)
@@ -27,6 +30,9 @@ namespace Systems
                 if (t == null || t.tag != TileTag.Basic && t.tag != TileTag.Upgrade) continue; // Only slide merge-able for v0.1
 
                 int nx = cell.x; int ny = cell.y;
+                Vector2Int start = new Vector2Int(nx, ny);
+                bool merged = false;
+
                 // Slide as far as possible
                 while (true)
                 {
@@ -52,8 +58,28 @@ namespace Systems
 
                         board.Grid[nx, ny] = null;
                         movedOrMerged = true;
+
+                        LastMoves.Add(new MoveInfo
+                        {
+                            tile = t,
+                            from = start,
+                            to = new Vector2Int(tx, ty),
+                            mergeTarget = other
+                        });
+                        merged = true;
                     }
                     break;
+                }
+
+                if (!merged && (start.x != nx || start.y != ny))
+                {
+                    LastMoves.Add(new MoveInfo
+                    {
+                        tile = t,
+                        from = start,
+                        to = new Vector2Int(nx, ny),
+                        mergeTarget = null
+                    });
                 }
             }
             return movedOrMerged;

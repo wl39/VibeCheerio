@@ -2,8 +2,11 @@
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using System.Collections;
+using System.Collections.Generic;
 using Board;
 using Core;
+using Systems;
 
 public class BoardView : MonoBehaviour
 {
@@ -11,8 +14,17 @@ public class BoardView : MonoBehaviour
     [SerializeField] private GameRunner runner;
     [SerializeField] private Transform boardGrid;   // BoardGrid RectTransform
     [SerializeField] private GameObject tileUIPrefab;
+    [SerializeField] private float moveDuration = 0.15f;
 
-    private readonly System.Collections.Generic.List<GameObject> pool = new();
+    private readonly Dictionary<TileData, RectTransform> tileViews = new();
+    private RectTransform boardRect;
+
+    void Awake()
+    {
+        boardRect = boardGrid as RectTransform;
+        var layout = boardRect.GetComponent<GridLayoutGroup>();
+        if (layout != null) layout.enabled = false; // manual positioning for animation
+    }
 
     void OnEnable()
     {
@@ -23,44 +35,170 @@ public class BoardView : MonoBehaviour
         if (runner != null) runner.OnBoardChanged -= Refresh;
     }
 
+    void Start()
+    {
+        RebuildAll();
+    }
+
     public void Refresh()
     {
-        // Clear all (간단 버전: 풀 돌리기)
-        foreach (var go in pool) go.SetActive(false);
+        if (runner.LastMoves.Count == 0 || tileViews.Count == 0)
+            RebuildAll();
+        else
+            StartCoroutine(Animate(runner.LastMoves));
+    }
 
-        int used = 0;
-        for (int y = BoardController.H - 1; y >= 0; y--)     // 보드의 위에서 아래로
-        {
+    void RebuildAll()
+    {
+        StopAllCoroutines();
+        foreach (var kv in tileViews) Destroy(kv.Value.gameObject);
+        tileViews.Clear();
+
+        for (int y = 0; y < BoardController.H; y++)
             for (int x = 0; x < BoardController.W; x++)
             {
                 var t = board.Grid[x, y];
                 if (t == null) continue;
+                var rt = CreateTile(t);
+                tileViews[t] = rt;
+            }
+    }
 
-                GameObject go;
-                if (used < pool.Count) go = pool[used++];
-                else { go = Instantiate(tileUIPrefab, boardGrid); pool.Add(go); used++; }
+    RectTransform CreateTile(TileData t)
+    {
+        var go = Instantiate(tileUIPrefab, boardRect);
+        UpdateTileVisual(t, go);
+        var rt = go.GetComponent<RectTransform>();
+        rt.anchoredPosition = CellToAnchoredPosition(t.x, t.y);
+        rt.localScale = Vector3.one;
+        return rt;
+    }
 
-                go.SetActive(true);
-                var txt = go.GetComponentInChildren<TextMeshProUGUI>(true);
-                var img = go.GetComponent<Image>();
+    void UpdateTileVisual(TileData t, GameObject go)
+    {
+        var txt = go.GetComponentInChildren<TextMeshProUGUI>(true);
+        var img = go.GetComponent<Image>();
 
-                // 값/태그 표기
-                if (t.tag == TileTag.Basic || t.tag == TileTag.Upgrade)
-                    txt.text = t.value.ToString();
-                else if (t.tag == TileTag.Wild) txt.text = "W";
-                else if (t.tag == TileTag.Trap) txt.text = "T";
-                else if (t.tag == TileTag.Enemy) txt.text = $"E\n{t.hp}";
+        if (t.tag == TileTag.Basic || t.tag == TileTag.Upgrade)
+            txt.text = t.value.ToString();
+        else if (t.tag == TileTag.Wild) txt.text = "W";
+        else if (t.tag == TileTag.Trap) txt.text = "T";
+        else if (t.tag == TileTag.Enemy) txt.text = $"E\n{t.hp}";
 
-                // 색상 간단 매핑
-                img.color = GetColorFor(t);
+        img.color = GetColorFor(t);
+    }
 
-                // GridLayoutGroup 사용 중이므로 위치는 인덱스로만 배치
-                // 셀 순서 = (위에서 아래로, 좌->우) 정렬이 필요하면 Layout Group의 Child Alignment를 Upper Left로
+    IEnumerator Animate(List<MoveInfo> moves)
+    {
+        var remove = new List<TileData>();
+        var bump = new HashSet<TileData>();
+
+        foreach (var m in moves)
+        {
+            if (!tileViews.TryGetValue(m.tile, out var rt)) continue;
+            StartCoroutine(MoveRect(rt, CellToAnchoredPosition(m.to.x, m.to.y), moveDuration));
+            if (m.mergeTarget != null)
+            {
+                remove.Add(m.tile);
+                bump.Add(m.mergeTarget);
             }
         }
 
-        // 빈 칸 UI 필요 없으므로 종료
-        LayoutRebuilder.ForceRebuildLayoutImmediate(boardGrid as RectTransform);
+        yield return new WaitForSeconds(moveDuration);
+
+        foreach (var t in remove)
+        {
+            if (tileViews.TryGetValue(t, out var rt))
+            {
+                Destroy(rt.gameObject);
+                tileViews.Remove(t);
+            }
+        }
+
+        foreach (var kv in tileViews)
+        {
+            kv.Value.anchoredPosition = CellToAnchoredPosition(kv.Key.x, kv.Key.y);
+            UpdateTileVisual(kv.Key, kv.Value.gameObject);
+        }
+
+        foreach (var t in bump)
+        {
+            if (tileViews.TryGetValue(t, out var rt))
+                StartCoroutine(ScaleBump(rt));
+        }
+
+        // Spawn new tiles
+        for (int y = 0; y < BoardController.H; y++)
+            for (int x = 0; x < BoardController.W; x++)
+            {
+                var t = board.Grid[x, y];
+                if (t != null && !tileViews.ContainsKey(t))
+                {
+                    var rt = CreateTile(t);
+                    rt.localScale = Vector3.zero;
+                    tileViews[t] = rt;
+                    StartCoroutine(ScaleIn(rt));
+                }
+            }
+    }
+
+    IEnumerator MoveRect(RectTransform rt, Vector2 target, float duration)
+    {
+        Vector2 start = rt.anchoredPosition;
+        float t = 0f;
+        while (t < 1f)
+        {
+            t += Time.deltaTime / duration;
+            rt.anchoredPosition = Vector2.Lerp(start, target, t);
+            yield return null;
+        }
+        rt.anchoredPosition = target;
+    }
+
+    IEnumerator ScaleIn(RectTransform rt)
+    {
+        Vector3 start = Vector3.zero;
+        Vector3 end = Vector3.one;
+        float t = 0f;
+        while (t < 1f)
+        {
+            t += Time.deltaTime / moveDuration;
+            rt.localScale = Vector3.Lerp(start, end, t);
+            yield return null;
+        }
+        rt.localScale = end;
+    }
+
+    IEnumerator ScaleBump(RectTransform rt)
+    {
+        Vector3 mid = Vector3.one * 1.1f;
+        float half = moveDuration * 0.5f;
+        float t = 0f;
+        Vector3 start = Vector3.one;
+        while (t < 1f)
+        {
+            t += Time.deltaTime / half;
+            rt.localScale = Vector3.Lerp(start, mid, t);
+            yield return null;
+        }
+        t = 0f;
+        while (t < 1f)
+        {
+            t += Time.deltaTime / half;
+            rt.localScale = Vector3.Lerp(mid, Vector3.one, t);
+            yield return null;
+        }
+        rt.localScale = Vector3.one;
+    }
+
+    Vector2 CellToAnchoredPosition(int x, int y)
+    {
+        var rect = boardRect.rect;
+        float cellW = rect.width / BoardController.W;
+        float cellH = rect.height / BoardController.H;
+        float originX = -rect.width / 2f + cellW / 2f;
+        float originY = -rect.height / 2f + cellH / 2f;
+        return new Vector2(originX + x * cellW, originY + y * cellH);
     }
 
     Color GetColorFor(TileData t)
