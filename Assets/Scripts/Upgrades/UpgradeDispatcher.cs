@@ -67,7 +67,7 @@ namespace Upgrades
                 {
                     state.lastTriggeredTurn = context.turnIndex;
                     state.triggeredThisTurn = context.turnIndex;
-                    state.nextAvailableTurn = context.turnIndex + tile.cooldownTurns;
+                    state.nextAvailableTurn = context.turnIndex + tile.cooldown;
                     state.lastTriggerFrame = currentFrame;
                     if (state.remainingCharges > 0) state.remainingCharges--;
                 }

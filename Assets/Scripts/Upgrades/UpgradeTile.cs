@@ -7,12 +7,17 @@ namespace Upgrades
     {
         public string id;
         public string displayName;
+        public BindScope bindScope = BindScope.Tile;
         public List<TriggerTiming> triggers = new();
+        public List<string> fsmGate = new();
+        public RunPhase runPhase = RunPhase.Post;
         public int priority = 0;
-        public int cooldownTurns = 0;
+        public int cooldown = 0;
         public int charges = -1;
         public bool oncePerTurn = false;
-        public bool stackable = true;
+        public StackPolicy stackPolicy = StackPolicy.Stack;
+        public int durationTurns = 0;
+        public int period = 1;
         public List<EffectData> effects = new();
         public List<ConditionData> conditions = new();
         public TargetSelectorData targetSelector;

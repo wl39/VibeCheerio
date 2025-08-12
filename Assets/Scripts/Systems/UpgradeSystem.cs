@@ -12,19 +12,20 @@ namespace Systems
             if (spec == null)
                 return Mathf.Max(a, b) + 1;
 
-            UpgradeEffectSpec mergeEffect = null;
-            foreach (var eff in spec.effects)
+            bool hasMergeTrigger = false;
+            foreach (var t in spec.triggers)
             {
-                if (eff.timing == TriggerTiming.OnMergePre || eff.timing == TriggerTiming.OnMergePost)
+                if (t == TriggerTiming.OnMergePre || t == TriggerTiming.OnMergePost)
                 {
-                    mergeEffect = eff;
+                    hasMergeTrigger = true;
                     break;
                 }
             }
 
-            if (mergeEffect == null)
+            if (!hasMergeTrigger || spec.effects.Count == 0)
                 return Mathf.Max(a, b) + 1;
 
+            var mergeEffect = spec.effects[0];
             // level==2(승급+)는 보너스를 주도록 간단 가중
             switch (mergeEffect.type)
             {

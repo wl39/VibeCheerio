@@ -9,14 +9,18 @@ namespace Data
     {
         public int id;
         public string displayName;
-        public List<UpgradeEffectSpec> effects = new();
-    }
-
-    [System.Serializable]
-    public class UpgradeEffectSpec
-    {
-        public TriggerTiming timing;
-        public string type;
-        public int period = 1; // Used when timing == OnPeriodicN
+        public BindScope bindScope = BindScope.Tile;
+        public List<TriggerTiming> triggers = new();
+        public List<string> fsmGate = new();
+        public RunPhase runPhase = RunPhase.Post;
+        public List<ConditionData> conditions = new();
+        public List<EffectData> effects = new();
+        public int priority = 0;
+        public int cooldown = 0;
+        public int charges = -1;
+        public StackPolicy stackPolicy = StackPolicy.Stack;
+        public int durationTurns = 0;
+        public int period = 1; // Used when triggers include OnPeriodic
+        public List<string> tags = new();
     }
 }
