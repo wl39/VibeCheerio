@@ -1003,6 +1003,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   board: {fileID: 986394916}
+  wildSpecs:
+  - {fileID: 11400000, guid: 56eb7e287084d4158b00e82002064628, type: 2}
+  upgradeSpecs:
+  - {fileID: 11400000, guid: faef5914e3c3d4dd48bbfd6e45b0eac5, type: 2}
+  eventPopup: {fileID: 0}
+  eventEveryTurns: 10
 --- !u!114 &550261036
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2196,6 +2202,7 @@ MonoBehaviour:
   runner: {fileID: 550261035}
   boardGrid: {fileID: 1109267312}
   tileUIPrefab: {fileID: 7296790764699085817, guid: e46a397637b4e4b32aac3e54fc893203, type: 3}
+  moveDuration: 0.15
 --- !u!114 &1318750595
 MonoBehaviour:
   m_ObjectHideFlags: 0

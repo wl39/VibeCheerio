@@ -17,7 +17,8 @@ public class AutoGridSizer : MonoBehaviour
 
     void UpdateCellSize()
     {
-        var total = rt.rect.size; var sp = grid.spacing;
+        var total = rt.rect.size;
+        var sp = grid.spacing;
         float cellW = (total.x - sp.x * (columns - 1)) / columns;
         float cellH = (total.y - sp.y * (rows - 1)) / rows;
         float cell = Mathf.Floor(Mathf.Min(cellW, cellH));
