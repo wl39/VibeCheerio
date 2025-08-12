@@ -106,18 +106,18 @@ namespace Systems
                         // NEW: Apply upgrade effect if any side is Upgrade
                         if (t.tag == TileTag.Upgrade)
                         {
-                            var eff = ResolveEffectFromId(t.upgradeSpecId);
+                            var spec = ResolveSpecFromId(t.upgradeSpecId);
                             int level = Mathf.Max(1, t.upgradeLevel);
-                            result = (upgradeSystem != null)
-                                ? upgradeSystem.Apply(eff, a, b, level)
+                            result = (upgradeSystem != null && spec != null)
+                                ? upgradeSystem.Apply(spec, a, b, level)
                                 : Mathf.Max(a, b) + 1;
                         }
                         else if (other.tag == TileTag.Upgrade)
                         {
-                            var eff = ResolveEffectFromId(other.upgradeSpecId);
+                            var spec = ResolveSpecFromId(other.upgradeSpecId);
                             int level = Mathf.Max(1, other.upgradeLevel);
-                            result = (upgradeSystem != null)
-                                ? upgradeSystem.Apply(eff, a, b, level)
+                            result = (upgradeSystem != null && spec != null)
+                                ? upgradeSystem.Apply(spec, a, b, level)
                                 : Mathf.Max(a, b) + 1;
                         }
                         else
@@ -171,11 +171,12 @@ namespace Systems
             return movedOrMerged;
         }
 
-        // Map UpgradeSpec.id -> UpgradeEffect enum (0..4)
-        private UpgradeEffect ResolveEffectFromId(int id)
+        // Lookup UpgradeSpec by id
+        private UpgradeSpec ResolveSpecFromId(int id)
         {
-            if (id < 0 || id > 4) return UpgradeEffect.Add;
-            return (UpgradeEffect)id;
+            if (wildSystem != null && wildSystem.TryGetUpgradeSpec(id, out var spec))
+                return spec;
+            return null;
         }
     }
 }
