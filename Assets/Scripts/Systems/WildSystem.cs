@@ -12,6 +12,7 @@ namespace Systems
 
         public void RegisterWildSpec(WildSpec spec) { wilds[spec.id] = spec; }
         public void RegisterUpgradeSpec(UpgradeSpec s) { upgrades[s.id] = s; }
+        public bool TryGetUpgradeSpec(int id, out UpgradeSpec spec) { return upgrades.TryGetValue(id, out spec); }
 
         // 보드에 와일드 스폰
         public bool SpawnWildRandom(BoardController board, int wildSpecId, System.Random rng)
