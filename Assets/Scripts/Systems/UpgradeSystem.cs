@@ -26,7 +26,6 @@ namespace Systems
                 return Mathf.Max(a, b) + 1;
 
             var mergeEffect = spec.effects[0];
-
             // level==2(승급+)는 보너스를 주도록 간단 가중
             switch (mergeEffect.type)
             {
